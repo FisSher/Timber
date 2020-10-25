@@ -1,10 +1,17 @@
 #include <SFML/Graphics.hpp>
 #include <sstream>
 using namespace sf;
-/// <summary>
-/// Mains this instance.
-/// </summary>
-/// <returns></returns>
+
+void updateBranches(int seed);
+
+const int NUM_BRANCHES = 6;
+Sprite branches[NUM_BRANCHES];
+
+//Posición del jugador o de la rama.
+enum class side { LEFT, RIGHT, NONE };
+side branchPositions[NUM_BRANCHES];
+
+
 int main() {
 	//Crea el objeto videomode.
 	VideoMode vm(1920, 1080);
@@ -134,6 +141,24 @@ int main() {
 	messageText.setPosition(1920 / 2.0f, 1080 / 2.0f);
 
 	scoreText.setPosition(20, 20);
+
+	//Preparar 6 ramas
+	Texture textureBranch;
+	textureBranch.loadFromFile("graphics/branch.png");
+
+	//Asignar la textura para cada branch sprite.
+	for (int i = 0; i < NUM_BRANCHES; i++)
+	{
+		branches[i].setTexture(textureBranch);
+		branches[i].setPosition(-2000, -2000);
+
+		//Tengo que asignarle el origen al centro así luego las puedo espejar
+		//sin tener que cambiarle la posición.
+		branches[i].setOrigin(220, 20);
+	}
+
+	
+
 
 	while (window.isOpen()) {
 		//Input del jugador.
@@ -289,6 +314,36 @@ int main() {
 			ss << "Puntaje = " << score;
 			scoreText.setString(ss.str());
 
+			//Actualizar los sprites de las ramas.
+			for (int i = 0; i < NUM_BRANCHES; i++)
+			{
+				float height = i * 150;
+
+				if (branchPositions[i] == side::LEFT) {
+					//Si está del lado izquierdo voy a posicionar el sprite a la izquierda.
+					branches[i].setPosition(610, height);
+
+					//Si está del lado izquierdo voy a rotar el sprite a la izquierda.
+					branches[i].setRotation(180);
+				}
+
+				else if (branchPositions[i] == side::RIGHT) {
+
+					//Si está del lado derecho lo roto.
+					branches[i].setPosition(1330, height);
+
+					//Rotacion del sprite normal
+					branches[i].setRotation(0);
+
+				}
+				else
+				{
+					//Ocultamos la rama
+					branches[i].setPosition(3000, height);
+				}
+			}
+
+
 
 		} //end if (!paused)
 
@@ -308,6 +363,13 @@ int main() {
 		window.draw(spriteCloud1);
 		window.draw(spriteCloud2);
 		window.draw(spriteCloud3);
+
+		//Dibujar las ramas
+		for (int i = 0; i < NUM_BRANCHES; i++)
+		{
+			window.draw(branches[i]);
+
+		}
 
 		//Dibuja el arbol
 		window.draw(spriteTree);
@@ -330,4 +392,32 @@ int main() {
 	}
 
 	return 0;
+}
+
+//Mueve las ramas un lugar abajo.
+void updateBranches(int seed) {
+
+	for (int j = NUM_BRANCHES-1; j > 0; j--)
+	{
+		branchPositions[j] = branchPositions[j - 1];
+	}
+
+	//Aparecer una nueva rama en la posición 0.
+	//LEFT, RIGHT o NONE.
+	srand((int)time(0) + seed);
+	int random = (rand() % 5);
+	switch (random) {
+	case 0:
+		branchPositions[0] = side::LEFT;
+		break;
+	case 1:
+		branchPositions[0] = side::RIGHT;
+		break;
+	default:
+		branchPositions[0] = side::NONE;
+		break;
+
+	}
+
+
 }
