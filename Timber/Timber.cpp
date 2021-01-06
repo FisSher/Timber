@@ -11,7 +11,6 @@ Sprite branches[NUM_BRANCHES];
 enum class side { LEFT, RIGHT, NONE };
 side branchPositions[NUM_BRANCHES];
 
-
 int main() {
 	//Crea el objeto videomode.
 	VideoMode vm(1920, 1080);
@@ -157,11 +156,67 @@ int main() {
 		branches[i].setOrigin(220, 20);
 	}
 
-	
+	//Prepara el jugador.
+	Texture texturePlayer;
+	texturePlayer.loadFromFile("graphics/player.png");
+	Sprite spritePlayer;
+	spritePlayer.setTexture(texturePlayer);
+	spritePlayer.setPosition(580, 720);
 
+	//El jugador va a comenzar del lado izquierdo.
+	side playerSide = side::LEFT;
+
+	//Prepara la tumba.
+	Texture textureRIP;
+	textureRIP.loadFromFile("graphics/rip.png");
+	Sprite spriteRIP;
+	spriteRIP.setTexture(textureRIP);
+	spriteRIP.setPosition(600, 860);
+
+	//Prepara el hacha
+	Texture textureAxe;
+	textureAxe.loadFromFile("graphics/axe.png");
+	Sprite spriteAxe;
+	spriteAxe.setTexture(textureAxe);
+	spriteAxe.setPosition(700, 830);
+
+	//Alinea el hacha con el arbol.
+	const float AXE_POSITION_LEFT = 700;
+	const float AXE_POSITION_RIGHT = 1075;
+
+	//Configuracion del tronco (el que vuela despues de cortar).
+	Texture textureLog;
+	textureLog.loadFromFile("graphics/log.png");
+	Sprite spriteLog;
+	spriteLog.setTexture(textureLog);
+	spriteLog.setPosition(810, 720);
+
+	//Variables de efectos del tronco.
+	bool logActive = false;
+	float logSpeedX = 1000;
+	float logSpeedY = -1500;
+
+	//Aceptar el input del jugador.
+	bool acceptInput = false;
 
 	while (window.isOpen()) {
+		Event event;
+
+		while (window.pollEvent(event))
+		{
+			if (event.type == Event::KeyReleased && !paused)
+			{
+				//Aceptar input de nuevo
+				acceptInput = true;
+
+				//Esconder el hacha.
+				spriteAxe.setPosition(2000, spriteAxe.getPosition().y);
+			}
+		}
+
+		//***********************
 		//Input del jugador.
+		//***********************
 		if (Keyboard::isKeyPressed(Keyboard::Escape))
 			window.close();
 
@@ -171,9 +226,61 @@ int main() {
 			//Resetear tiempo y puntaje.
 			score = 0;
 			timeRemaining = 6;
-		
+
+			//Hacer que todas las ramas a partir de la segunda posición desaparecer.
+			for (int i = 0; i < NUM_BRANCHES; i++)
+			{
+				branchPositions[i] = side::NONE;
+			}
+
+			//Esconder la tumba.
+			spriteRIP.setPosition(675, 2000);
+
+			//Poner el personaje en posición.
+			spritePlayer.setPosition(580, 720);
+
+			acceptInput = true;
 		}
-			
+
+		if (acceptInput) {
+			//Input derecho.
+			if (Keyboard::isKeyPressed(Keyboard::Right)) {
+				playerSide = side::RIGHT;
+				score++;
+				timeRemaining += (2 / score) + .15;
+				spriteAxe.setPosition(AXE_POSITION_RIGHT, spriteAxe.getPosition().y);
+				spritePlayer.setPosition(1200, 720);
+
+				//Actualizar ramas.
+				updateBranches(score);
+
+				//El leño vuela para la izquierda.
+				spriteLog.setPosition(810, 720);
+				logSpeedX = -5000;
+				logActive = true;
+
+				acceptInput = false;
+			}
+
+			//Input Izquierdo.
+			if (Keyboard::isKeyPressed(Keyboard::Left)) {
+				playerSide = side::LEFT;
+				score++;
+				timeRemaining += (2 / score) + .15;
+				spriteAxe.setPosition(AXE_POSITION_LEFT, spriteAxe.getPosition().y);
+				spritePlayer.setPosition(580, 720);
+
+				//Actualizar ramas.
+				updateBranches(score);
+
+				//El leño vuela para la izquierda.
+				spriteLog.setPosition(810, 720);
+				logSpeedX = -5000;
+				logActive = true;
+
+				acceptInput = false;
+			}
+		}
 
 		/*
 		****************************************
@@ -181,11 +288,9 @@ int main() {
 		****************************************
 		*/
 		if (!paused) {
-
-		
 			//Diferencia de tiempo entre dos actualizaciones.
 			Time deltaTime = clock.restart();
-			
+
 			//Restar el tiempo restante.
 			timeRemaining -= deltaTime.asSeconds();
 
@@ -207,7 +312,6 @@ int main() {
 					textRect.height / 2.0f);
 
 				messageText.setPosition(1090 / 2.0f, 1080 / 2.0f);
-			
 			}
 
 			//Configurar la abeja.
@@ -328,13 +432,11 @@ int main() {
 				}
 
 				else if (branchPositions[i] == side::RIGHT) {
-
 					//Si está del lado derecho lo roto.
 					branches[i].setPosition(1330, height);
 
 					//Rotacion del sprite normal
 					branches[i].setRotation(0);
-
 				}
 				else
 				{
@@ -342,11 +444,7 @@ int main() {
 					branches[i].setPosition(3000, height);
 				}
 			}
-
-
-
 		} //end if (!paused)
-
 
 		/*
 		****************************************
@@ -364,20 +462,31 @@ int main() {
 		window.draw(spriteCloud2);
 		window.draw(spriteCloud3);
 
-		//Dibujar las ramas
+		//Dibujar las ramas.
 		for (int i = 0; i < NUM_BRANCHES; i++)
 		{
 			window.draw(branches[i]);
-
 		}
 
-		//Dibuja el arbol
+		//Dibuja el arbol.
 		window.draw(spriteTree);
 
-		//Dibuja las abejas
+		//Dibuja el jugar.
+		window.draw(spritePlayer);
+
+		//Dibuja el hacha.
+		window.draw(spriteAxe);
+
+		//Dibuja el tronco que vuela.
+		window.draw(spriteLog);
+
+		//Dibuja la tumba.
+		window.draw(spriteRIP);
+
+		//Dibuja las abejas.
 		window.draw(spriteBee);
 
-		//Dibuja el puntaje
+		//Dibuja el puntaje.
 		window.draw(scoreText);
 
 		//Dibujar la barra de tiempo.
@@ -396,8 +505,7 @@ int main() {
 
 //Mueve las ramas un lugar abajo.
 void updateBranches(int seed) {
-
-	for (int j = NUM_BRANCHES-1; j > 0; j--)
+	for (int j = NUM_BRANCHES - 1; j > 0; j--)
 	{
 		branchPositions[j] = branchPositions[j - 1];
 	}
@@ -416,8 +524,5 @@ void updateBranches(int seed) {
 	default:
 		branchPositions[0] = side::NONE;
 		break;
-
 	}
-
-
 }
